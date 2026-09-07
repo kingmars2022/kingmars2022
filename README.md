@@ -25,7 +25,7 @@ A Redis read-through cache that **degrades to in-process memory during an outage
 taking the API down, with hit/miss stats exposed on `/health`.
 **159 tests at 94% statement coverage**, enforced by a coverage gate in CI.
 
-### [Bienvenue à Blainville](https://github.com/kingmars2022/blainville-waste-sorting) — municipal waste sorting platform
+### [Blainville Waste Sorting Platform](https://github.com/kingmars2022/blainville-waste-sorting) — municipal waste sorting and collection app
 `Vue 3` `TypeScript` `Spring Boot` `Java 21` `MyBatis` `MySQL` `Flyway` `Spring Security`
 
 A trilingual (**French / English / Chinese**) app for Blainville residents, with a full admin back office.
