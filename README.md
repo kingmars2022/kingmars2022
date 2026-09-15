@@ -15,15 +15,22 @@ Working languages: English · **French (B2 certified)** · Mandarin (native)
 ## What I've built
 
 ### [Stockroom](https://github.com/kingmars2022/stockroom-warehouse-system) — warehouse operations system
-`Python` `FastAPI` `PostgreSQL` `Redis` `Next.js` `AWS Cognito` `Kubernetes` `Terraform`
+`Python` `FastAPI` `PostgreSQL` `MongoDB` `Redis` `AWS Lambda` `API Gateway` `Cognito` `Next.js` `Terraform`
 
 19 REST endpoints over an 8-table schema, where **stock cannot go negative under concurrency**.
 Row-level `SELECT … FOR UPDATE` locking, proven by a test that races **20 threads for 10 units**
 against a real PostgreSQL instance — exactly 10 succeed, 10 are rejected, the balance lands on zero.
 
-A Redis read-through cache that **degrades to in-process memory during an outage** rather than
-taking the API down, with hit/miss stats exposed on `/health`.
-**159 tests at 94% statement coverage**, enforced by a coverage gate in CI.
+Every audit entry is also published as a **MongoDB** document carrying the fields that action
+actually has, so "every purchase that rose more than 20%" is a query instead of a prose scan.
+A tool-using **agent** proposes reorders but cannot place one — every tool but the final
+proposal is read-only, and the numbers come from the same replenishment engine the console
+uses, not the model. Two **AWS Lambdas** close gaps a presigned-upload API can't reach on its
+own: one checks a receipt's real file signature against what the client claimed, the other lets
+suppliers push price quotes through a signed **API Gateway** webhook.
+
+**277 tests at 95% statement coverage**, including passes in CI against real Redis, PostgreSQL,
+and MongoDB instances rather than in-memory stand-ins, enforced by a coverage gate.
 
 ### [Blainville Waste Sorting Platform](https://github.com/kingmars2022/blainville-waste-sorting) — municipal waste sorting and collection app
 `Vue 3` `TypeScript` `Spring Boot` `Java 21` `MyBatis` `MySQL` `Flyway` `Spring Security`
@@ -43,8 +50,9 @@ that crashed on startup, admin endpoints throwing `ClassCastException` on every 
 **Languages** Java · Python · TypeScript · JavaScript · SQL  
 **Backend** Spring Boot · Spring Security · FastAPI · Node.js · MyBatis · REST APIs  
 **Frontend** React · Next.js · Vue 3 · Pinia · Vite  
-**Data** PostgreSQL · MySQL · Redis · Flyway · Alembic · schema design  
-**Delivery** Docker · Kubernetes · Terraform · GitHub Actions · pytest · JUnit · MockMvc
+**Data** PostgreSQL · MySQL · MongoDB · Redis · Flyway · Alembic · schema design  
+**Cloud** AWS (Lambda · API Gateway · Cognito · S3) · Docker · Kubernetes · Terraform  
+**Delivery** GitHub Actions · pytest · JUnit · MockMvc
 
 ---
 
