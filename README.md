@@ -58,9 +58,9 @@ real S3 API and a real Kafka broker locally rather than on AWS, and the reposito
 than implying otherwise.
 
 ### [Stockroom](https://github.com/kingmars2022/stockroom-warehouse-system) — warehouse operations system
-`Python` `FastAPI` `PostgreSQL` `MongoDB` `Redis` `AWS Lambda` `API Gateway` `Cognito` `Next.js` `Terraform`
+`Python` `FastAPI` `PostgreSQL` `MongoDB` `Redis` `AWS Lambda` `API Gateway` `Cognito` `Next.js` `Kubernetes` `Terraform`
 
-19 REST endpoints over an 8-table schema, where **stock cannot go negative under concurrency**.
+22 REST endpoints over an 8-table schema, where **stock cannot go negative under concurrency**.
 Row-level `SELECT … FOR UPDATE` locking, proven by a test that races **20 threads for 10 units**
 against a real PostgreSQL instance — exactly 10 succeed, 10 are rejected, the balance lands on zero.
 
@@ -72,7 +72,7 @@ uses, not the model. Two **AWS Lambdas** close gaps a presigned-upload API can't
 own: one checks a receipt's real file signature against what the client claimed, the other lets
 suppliers push price quotes through a signed **API Gateway** webhook.
 
-**277 tests at 95% statement coverage**, including passes in CI against real Redis, PostgreSQL,
+**289 tests at 95% statement coverage**, including passes in CI against real Redis, PostgreSQL,
 and MongoDB instances rather than in-memory stand-ins, enforced by a coverage gate.
 
 ---
