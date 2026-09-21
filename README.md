@@ -69,8 +69,11 @@ until the client was told to fail fast, a calendar that would have silently run 
 an edit form that would have erased every card's examples, and a deployment jar that could never
 have cold-started. Load tested at **200 concurrent users with zero failed requests**.
 
-Not deployed yet — the photo pipeline is exercised against a real S3 API and a real Kafka broker
-locally, not on AWS, and the repository says so rather than implying otherwise.
+**Live at [blainville-waste-sorting.onrender.com](https://blainville-waste-sorting.onrender.com/)** —
+one Docker image serving the API and the pages, on a free tier that sleeps when idle, so the first
+request after a quiet spell takes about a minute. The photo pipeline is still exercised against a
+real S3 API and a real Kafka broker locally rather than on AWS, and the repository says so rather
+than implying otherwise.
 
 ---
 
