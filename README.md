@@ -60,7 +60,7 @@ than implying otherwise.
 ### [Stockroom](https://github.com/kingmars2022/stockroom-warehouse-system) — warehouse operations system
 `Python` `FastAPI` `PostgreSQL` `MongoDB` `Redis` `AWS Lambda` `API Gateway` `Cognito` `Next.js` `Kubernetes` `Terraform`
 
-22 REST endpoints over an 8-table schema, where **stock cannot go negative under concurrency**.
+22 REST endpoints over a 9-table schema, where **stock cannot go negative under concurrency**.
 Row-level `SELECT … FOR UPDATE` locking, proven by a test that races **20 threads for 10 units**
 against a real PostgreSQL instance — exactly 10 succeed, 10 are rejected, the balance lands on zero.
 
