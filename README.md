@@ -15,6 +15,9 @@ Working languages: English · **French (B2 certified)** · Mandarin (native)
 ## What I've built
 
 ### [Blainville Waste Sorting Platform](https://github.com/kingmars2022/blainville-waste-sorting) — municipal waste sorting and collection app
+
+*A website that tells residents of a Quebec town which bin goes out and when, in French, English and Chinese — and says "I don't know" when the city's guide doesn't cover the question. Built with AI assistance (Claude Code); details in the repository README.*
+
 `Vue 3` `TypeScript` `Spring Boot` `Java 21` `MyBatis` `MySQL` `Redis` `Kafka` `MongoDB` `AWS S3/Lambda` `Flyway` `Spring Security`
 
 A trilingual (**French / English / Chinese**) app for Blainville residents, with a full admin back office.
@@ -58,6 +61,9 @@ real S3 API and a real Kafka broker locally rather than on AWS, and the reposito
 than implying otherwise.
 
 ### [Stockroom](https://github.com/kingmars2022/stockroom-warehouse-system) — warehouse operations system
+
+*A back-office system for a warehouse: track stock, receive goods and plan reorders, without ever selling stock that isn't there.*
+
 `Python` `FastAPI` `PostgreSQL` `MongoDB` `Redis` `AWS Lambda` `API Gateway` `Cognito` `Next.js` `Kubernetes` `Terraform`
 
 22 REST endpoints over a 9-table schema, where **stock cannot go negative under concurrency**.
