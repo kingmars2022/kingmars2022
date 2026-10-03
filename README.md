@@ -48,7 +48,7 @@ Photo questions upload **straight to S3 on a presigned URL** with size and conte
 the bytes never pass through the application, and a **Lambda strips EXIF** before anything is served —
 a photo of a bin on a driveway carries the GPS coordinates of the house.
 
-**194 tests** — 83 of them against real MySQL, Redis, Kafka and S3 rather than mocks, which is how
+**196 tests** — 85 of them against real MySQL, Redis, Kafka and S3 rather than mocks, which is how
 most of the bugs in this repository's history were found: a dead Redis costing 4 seconds a request
 until the client was told to fail fast, a calendar that would have silently run out on a fixed date,
 an edit form that would have erased every card's examples, and a deployment jar that could never
