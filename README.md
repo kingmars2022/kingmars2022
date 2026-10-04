@@ -14,73 +14,61 @@ Working languages: English · **French (B2 certified)** · Mandarin (native)
 
 ## What I've built
 
-### [Blainville Waste Sorting Platform](https://github.com/kingmars2022/blainville-waste-sorting) — municipal waste sorting and collection app
+### [Blainville Waste Sorting](https://github.com/kingmars2022/blainville-waste-sorting) — municipal waste sorting and collection app
 
-*A website that tells residents of a Quebec town which bin goes out and when, in French, English and Chinese — and says "I don't know" when the city's guide doesn't cover the question. Built with AI assistance (Claude Code); details in the repository README.*
+*A website for residents of a Quebec town: which bin goes out tonight, where any household item belongs, and what the city has announced. In French, English and Chinese. Built with AI assistance (Claude Code).*
 
-`Vue 3` `TypeScript` `Spring Boot` `Java 21` `MyBatis` `MySQL` `Redis` `Kafka` `MongoDB` `AWS S3/Lambda` `Flyway` `Spring Security` `Web Push (RFC 8291)`
+`Java` `Spring Boot` `Spring Security` `MyBatis` `MySQL` `Redis` `Kafka` `MongoDB` `AWS S3/Lambda` `Flyway` `Web Push` `Vue` `TypeScript` `Docker`
 
-A trilingual (**French / English / Chinese**) app for Blainville residents, with a full admin back office.
-**JWT authentication end to end** — a custom Spring Security filter, BCrypt hashing, ADMIN/USER roles
-returning correct 401 versus 403 semantics.
+A Spring Boot backend over a 14-table MySQL schema with 39 REST endpoints, and a Vue console on
+top of it. Residents and staff see different systems, enforced by JWT through a custom Spring
+Security filter with BCrypt hashing and ADMIN/USER roles that return 401 and 403 for the right
+reasons. Schema and reference data both live in Flyway migrations (V1–V18), so an empty database
+comes back fully populated on first boot.
 
-Residents ask questions in their own language and get **grounded answers or an explicit refusal** —
-never an invented one. Retrieval is MySQL full-text with **two parsers**, the default word parser for
-French and English and `ngram` for Chinese, because one parser made refusal impossible. Scored
-**19/19 retrieval precision@1 and 6/6 refusal accuracy** over 25 questions — and expanding that
-set is what caught a bug nothing else would have: a question about chicken bones answered in
-English and refused in French, because `os` is two letters and InnoDB's full-text index skips
-tokens shorter than three. Telling someone to put
-paint in the blue bin is a real-world error, so the guide decides the bin — the model only does the
-wording, and answers nothing when retrieval returns nothing.
+What it does:
 
-An **admin agent** proposes changes and cannot make them: Claude tool use where reads execute during
-planning and every write is recorded as a plan a human approves. Plans live in Redis for 15 minutes,
-are **single-use under concurrency** (`GETDEL`, with the owner in the key, after a test raced two
-approvals and found both executing), and are bound to the administrator they were shown to.
+- **Collection schedules as recurring rules plus generated events,** so one statutory holiday
+  shifts every affected pickup, including dates already generated months ahead, instead of
+  editing each date by hand.
+- **A sorting guide of 35 categories** taken from the city's printed calendar, served from the
+  database to residents, the assistant, the photo lookup and the admin console alike rather than
+  duplicated in the frontend.
+- **An assistant that answers only from that guide** and refuses when it has nothing: 19/19
+  retrieval precision@1 and 6/6 refusals over 25 questions. Retrieval is MySQL full-text with two
+  parsers, the default word parser for French and English and `ngram` for Chinese, because one
+  parser made refusal impossible.
+- **An admin agent that proposes and cannot execute.** Every write is a plan a human approves.
+  Plans live in Redis for 15 minutes, keyed to the administrator they were shown to, and are
+  single-use under concurrency (`GETDEL`, after a test raced two approvals and found both running).
+- **Notices through a transactional outbox,** so the event commits with the row instead of being
+  published inside the request. A relay drains it to Kafka, where two idempotent consumer groups
+  fan out a resident inbox and an audit trail.
+- **An audit trail built twice,** over MongoDB and a MySQL JSON column, with one contract test run
+  against both. MySQL wins at this scale. What MongoDB earns is the other half: an aggregation
+  over anonymous resident questions reporting which materials the guide cannot answer, with
+  retention as a TTL index.
+- **Browser push encrypted to RFC 8291** against the JDK rather than a library, checked byte for
+  byte against output from `http_ece`, the implementation `web-push` uses. That comparison found
+  two defects: the JDK's `KeyFactory` accepts public keys that are not points on the P-256 curve,
+  and `jjwt` serialises a single `aud` claim as a one-element array. Push is a second delivery;
+  the notice row stays the record.
+- **Photo questions uploaded straight to S3** on a presigned URL with size and content type signed
+  in, so the bytes never reach the application, and a Lambda strips EXIF before anything is served.
 
-Notice events go through a **transactional outbox** rather than a publish inside the request — the
-event commits with the row, and a relay drains it to **Kafka**, where two consumer groups fan out a
-resident inbox and an audit trail. Delivery is at-least-once, so both consumers are idempotent.
-The audit trail is implemented **twice**, over **MongoDB** and a MySQL JSON column, with one contract
-test run against both — and the honest conclusion is that MySQL wins at this scale. What MongoDB
-earns is the other half: an aggregation over anonymous resident questions that reports **which
-materials residents ask about that the guide cannot answer**, with retention as a TTL index.
+The collection calendar is checked against the city's published document, not against the database
+it was generated from. Every test passed for weeks while the calendar printed the wrong bin: two
+patterns were labelled recycling where Blainville prints household waste.
 
-The same notice can also reach a resident as a **browser push notification**, encrypted to
-**RFC 8291** against the JDK rather than a library — and the reason that is defensible is that it
-is checked against somebody else's implementation instead of its own. A test encrypts a fixed
-input and compares it byte for byte with output captured from `http_ece`, the JavaScript library
-`web-push` uses. That comparison found two defects: the JDK's `KeyFactory` will happily accept a
-public key that is **not a point on the P-256 curve** — an invalid-curve attack any API caller can
-choose — so the point is now validated explicitly; and `jjwt` serialises a single `aud` claim as a
-one-element array where every reference implementation emits a string. Push is a *second* delivery,
-never the record: the notice row is written first, so a revoked permission costs a resident a buzz
-rather than the notice.
+**248 tests** — 112 unit, 101 against real infrastructure, 35 in the browser. CI runs the
+integration suite against real MySQL and Redis; Kafka, MongoDB and S3 are exercised against real
+local instances rather than mocks. Load tested at **200 concurrent users with zero failed requests**.
 
-Photo questions upload **straight to S3 on a presigned URL** with size and content type signed in, so
-the bytes never pass through the application, and a **Lambda strips EXIF** before anything is served —
-a photo of a bin on a driveway carries the GPS coordinates of the house.
+**Live at [blainville-waste-sorting.onrender.com](https://blainville-waste-sorting.onrender.com/)**
+— one Docker image serving the API and the pages, on a free tier that sleeps when idle, so the
+first request after a quiet spell takes about a minute. Redis, Kafka, MongoDB and the photo
+pipeline are switched off there and the application degrades to MySQL by design.
 
-**248 tests** — 101 of them against real MySQL, Redis, Kafka and S3 rather than mocks, which is how
-most of the bugs in this repository's history were found: a dead Redis costing 4 seconds a request
-until the client was told to fail fast, a calendar that would have silently run out on a fixed date,
-an edit form that would have erased every card's examples, and a deployment jar that could never
-have cold-started.
-
-The one I'd rather be asked about passed every test for weeks. The collection calendar printed the
-wrong bin, and no test caught it because every test compared the calendar to the database it was
-generated from. Comparing it to the city's own published document instead showed that two collection
-patterns had been labelled recycling where Blainville prints household waste — residents would have
-put out the blue bin on a black-bin week all year. **A test that only checks a system against itself
-cannot find a system that is confidently wrong**; that test now reads the municipal document.
-Load tested at **200 concurrent users with zero failed requests**.
-
-**Live at [blainville-waste-sorting.onrender.com](https://blainville-waste-sorting.onrender.com/)** —
-one Docker image serving the API and the pages, on a free tier that sleeps when idle, so the first
-request after a quiet spell takes about a minute. The photo pipeline is still exercised against a
-real S3 API and a real Kafka broker locally rather than on AWS, and the repository says so rather
-than implying otherwise.
 
 ### [Stockroom](https://github.com/kingmars2022/stockroom-warehouse-system) — warehouse operations system
 
