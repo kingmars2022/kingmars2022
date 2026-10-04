@@ -18,7 +18,7 @@ Working languages: English · **French (B2 certified)** · Mandarin (native)
 
 *A website that tells residents of a Quebec town which bin goes out and when, in French, English and Chinese — and says "I don't know" when the city's guide doesn't cover the question. Built with AI assistance (Claude Code); details in the repository README.*
 
-`Vue 3` `TypeScript` `Spring Boot` `Java 21` `MyBatis` `MySQL` `Redis` `Kafka` `MongoDB` `AWS S3/Lambda` `Flyway` `Spring Security`
+`Vue 3` `TypeScript` `Spring Boot` `Java 21` `MyBatis` `MySQL` `Redis` `Kafka` `MongoDB` `AWS S3/Lambda` `Flyway` `Spring Security` `Web Push (RFC 8291)`
 
 A trilingual (**French / English / Chinese**) app for Blainville residents, with a full admin back office.
 **JWT authentication end to end** — a custom Spring Security filter, BCrypt hashing, ADMIN/USER roles
@@ -27,7 +27,10 @@ returning correct 401 versus 403 semantics.
 Residents ask questions in their own language and get **grounded answers or an explicit refusal** —
 never an invented one. Retrieval is MySQL full-text with **two parsers**, the default word parser for
 French and English and `ngram` for Chinese, because one parser made refusal impossible. Scored
-**12/12 retrieval precision@1 and 6/6 refusal accuracy** over 18 questions. Telling someone to put
+**19/19 retrieval precision@1 and 6/6 refusal accuracy** over 25 questions — and expanding that
+set is what caught a bug nothing else would have: a question about chicken bones answered in
+English and refused in French, because `os` is two letters and InnoDB's full-text index skips
+tokens shorter than three. Telling someone to put
 paint in the blue bin is a real-world error, so the guide decides the bin — the model only does the
 wording, and answers nothing when retrieval returns nothing.
 
@@ -44,15 +47,34 @@ test run against both — and the honest conclusion is that MySQL wins at this s
 earns is the other half: an aggregation over anonymous resident questions that reports **which
 materials residents ask about that the guide cannot answer**, with retention as a TTL index.
 
+The same notice can also reach a resident as a **browser push notification**, encrypted to
+**RFC 8291** against the JDK rather than a library — and the reason that is defensible is that it
+is checked against somebody else's implementation instead of its own. A test encrypts a fixed
+input and compares it byte for byte with output captured from `http_ece`, the JavaScript library
+`web-push` uses. That comparison found two defects: the JDK's `KeyFactory` will happily accept a
+public key that is **not a point on the P-256 curve** — an invalid-curve attack any API caller can
+choose — so the point is now validated explicitly; and `jjwt` serialises a single `aud` claim as a
+one-element array where every reference implementation emits a string. Push is a *second* delivery,
+never the record: the notice row is written first, so a revoked permission costs a resident a buzz
+rather than the notice.
+
 Photo questions upload **straight to S3 on a presigned URL** with size and content type signed in, so
 the bytes never pass through the application, and a **Lambda strips EXIF** before anything is served —
 a photo of a bin on a driveway carries the GPS coordinates of the house.
 
-**196 tests** — 85 of them against real MySQL, Redis, Kafka and S3 rather than mocks, which is how
+**248 tests** — 101 of them against real MySQL, Redis, Kafka and S3 rather than mocks, which is how
 most of the bugs in this repository's history were found: a dead Redis costing 4 seconds a request
 until the client was told to fail fast, a calendar that would have silently run out on a fixed date,
 an edit form that would have erased every card's examples, and a deployment jar that could never
-have cold-started. Load tested at **200 concurrent users with zero failed requests**.
+have cold-started.
+
+The one I'd rather be asked about passed every test for weeks. The collection calendar printed the
+wrong bin, and no test caught it because every test compared the calendar to the database it was
+generated from. Comparing it to the city's own published document instead showed that two collection
+patterns had been labelled recycling where Blainville prints household waste — residents would have
+put out the blue bin on a black-bin week all year. **A test that only checks a system against itself
+cannot find a system that is confidently wrong**; that test now reads the municipal document.
+Load tested at **200 concurrent users with zero failed requests**.
 
 **Live at [blainville-waste-sorting.onrender.com](https://blainville-waste-sorting.onrender.com/)** —
 one Docker image serving the API and the pages, on a free tier that sleeps when idle, so the first
