@@ -86,9 +86,9 @@ than implying otherwise.
 
 *A back-office system for a warehouse: track stock, receive goods and plan reorders, without ever selling stock that isn't there.*
 
-`Python` `FastAPI` `PostgreSQL` `MongoDB` `Redis` `AWS Lambda` `API Gateway` `Cognito` `Next.js` `Kubernetes` `Terraform`
+`Python` `FastAPI` `PostgreSQL` `MongoDB` `Redis` `AWS Lambda` `API Gateway` `Cognito` `Next.js` `Playwright` `Kubernetes` `Terraform`
 
-22 REST endpoints over a 9-table schema, where **stock cannot go negative under concurrency**.
+24 REST endpoints over a 9-table schema, where **stock cannot go negative under concurrency**.
 Row-level `SELECT … FOR UPDATE` locking, proven by a test that races **20 threads for 10 units**
 against a real PostgreSQL instance — exactly 10 succeed, 10 are rejected, the balance lands on zero.
 
@@ -100,8 +100,37 @@ uses, not the model. Two **AWS Lambdas** close gaps a presigned-upload API can't
 own: one checks a receipt's real file signature against what the client claimed, the other lets
 suppliers push price quotes through a signed **API Gateway** webhook.
 
-**289 tests at 95% statement coverage**, including passes in CI against real Redis, PostgreSQL,
-and MongoDB instances rather than in-memory stand-ins, enforced by a coverage gate.
+The part I'd rather be asked about is what happened when I stopped assuming it scaled and
+measured it at **10,000 items and 80,000 rows of history**. Signing in downloaded **33 MB** —
+the whole warehouse — and the inventory screen spent **7.4 seconds** laying out 130,287 DOM
+nodes for a page that shows fifty. Working out what to reorder took 3.3 s and 161 MB, and a
+profile put four fifths of that inside SQLAlchemy's row hydration: the engine read every
+movement and purchase ever recorded to produce two numbers per item, so its cost grew with how
+long the warehouse had been running rather than with how much it stocks. Rewritten as SQL
+aggregates and a `ROW_NUMBER` window it is **0.97 s and 29 MB**, and with every list read a
+page at a time, signing in is **151 KB**.
+
+Paging the purchase history is where it got interesting, because it took an answer away from
+the console: the price alerts were derived by filtering every purchase the browser had been
+sent. In that dataset there are **10,817 alerts in the database against 19 visible in the fifty
+most recent purchases** — a page would have quietly redefined "price alerts" as "price alerts
+among recent purchases", on a figure the dashboard prints on a card. They are a server-side
+query now, and so are the alternative supplier prices quoted beside each one.
+
+I also published the wrong number first. "33 MB to 107 KB" left out the ranked purchase plan,
+another 1.45 MB the console fetches on sign-in: I had measured the endpoints I changed rather
+than the whole path. Re-measuring all of it is what caught it, and the commit that fixes it
+says so.
+
+**334 backend tests at 95% statement coverage** and **34 driving the console in a real
+browser**, including passes in CI against real Redis, PostgreSQL and MongoDB instances rather
+than in-memory stand-ins, enforced by a coverage gate.
+
+**Live at [stockroom-warehouse-system.vercel.app](https://stockroom-warehouse-system.vercel.app)** —
+the console with the warehouse seeded into the browser, so there is nothing to wake up: sign in
+as `admin@stockroom.test` / `Stockroom!2026` and each of the three roles sees a different
+system. The API, Cognito and the Lambdas are exercised in CI and locally rather than deployed
+to AWS, and the repository says so rather than implying otherwise.
 
 ---
 
@@ -112,7 +141,7 @@ and MongoDB instances rather than in-memory stand-ins, enforced by a coverage ga
 **Frontend** React · Next.js · Vue 3 · Pinia · Vite  
 **Data** PostgreSQL · MySQL · MongoDB · Redis · Flyway · Alembic · schema design  
 **Cloud** AWS (Lambda · API Gateway · Cognito · S3) · Docker · Kubernetes · Terraform  
-**Delivery** GitHub Actions · pytest · JUnit · MockMvc
+**Delivery** GitHub Actions · pytest · JUnit · MockMvc · Playwright
 
 ---
 
