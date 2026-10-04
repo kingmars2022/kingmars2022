@@ -117,11 +117,11 @@ seeded into the browser; the API, Cognito and the Lambdas run in CI and locally,
 ## Tools I reach for
 
 **Languages** Java · Python · TypeScript · JavaScript · SQL  
-**Backend** Spring Boot · Spring Security · FastAPI · Node.js · MyBatis · REST APIs  
-**Frontend** React · Next.js · Vue 3 · Pinia · Vite  
-**Data** PostgreSQL · MySQL · MongoDB · Redis · Flyway · Alembic · schema design  
+**Backend** Spring Boot · Spring Security · JWT · FastAPI · Node.js · MyBatis · REST APIs  
+**Frontend** React · Next.js · Vue · Pinia · Vite  
+**Data & messaging** PostgreSQL · MySQL · MongoDB · Redis · Kafka · Flyway · Alembic · schema design  
 **Cloud** AWS (Lambda · API Gateway · Cognito · S3) · Docker · Kubernetes · Terraform  
-**Delivery** GitHub Actions · pytest · JUnit · MockMvc · Playwright
+**Delivery** GitHub Actions · pytest · JUnit · MockMvc · Vitest · Playwright
 
 ---
 
