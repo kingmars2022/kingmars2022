@@ -84,53 +84,45 @@ than implying otherwise.
 
 ### [Stockroom](https://github.com/kingmars2022/stockroom-warehouse-system) — warehouse operations system
 
-*A back-office system for a warehouse: track stock, receive goods and plan reorders, without ever selling stock that isn't there.*
+*A back-office system for a warehouse: track what gets taken, what comes in, what needs reordering, and who approved the spending.*
 
-`Python` `FastAPI` `PostgreSQL` `MongoDB` `Redis` `AWS Lambda` `API Gateway` `Cognito` `Next.js` `Playwright` `Kubernetes` `Terraform`
+`Python` `FastAPI` `PostgreSQL` `MongoDB` `Redis` `AWS Lambda` `API Gateway` `Cognito` `S3` `Next.js` `TypeScript` `Playwright` `Docker` `Kubernetes` `Terraform`
 
-24 REST endpoints over a 9-table schema, where **stock cannot go negative under concurrency**.
-Row-level `SELECT … FOR UPDATE` locking, proven by a test that races **20 threads for 10 units**
-against a real PostgreSQL instance — exactly 10 succeed, 10 are rejected, the balance lands on zero.
+A FastAPI backend over a 9-table PostgreSQL schema with 24 REST endpoints, and a Next.js
+console on top of it. Three roles — employee, supervisor, manager — each see a different
+system, enforced on the server rather than by hiding buttons.
 
-Every audit entry is also published as a **MongoDB** document carrying the fields that action
-actually has, so "every purchase that rose more than 20%" is a query instead of a prose scan.
-A tool-using **agent** proposes reorders but cannot place one — every tool but the final
-proposal is read-only, and the numbers come from the same replenishment engine the console
-uses, not the model. Two **AWS Lambdas** close gaps a presigned-upload API can't reach on its
-own: one checks a receipt's real file signature against what the client claimed, the other lets
-suppliers push price quotes through a signed **API Gateway** webhook.
+What it does:
 
-The part I'd rather be asked about is what happened when I stopped assuming it scaled and
-measured it at **10,000 items and 80,000 rows of history**. Signing in downloaded **33 MB** —
-the whole warehouse — and the inventory screen spent **7.4 seconds** laying out 130,287 DOM
-nodes for a page that shows fifty. Working out what to reorder took 3.3 s and 161 MB, and a
-profile put four fifths of that inside SQLAlchemy's row hydration: the engine read every
-movement and purchase ever recorded to produce two numbers per item, so its cost grew with how
-long the warehouse had been running rather than with how much it stocks. Rewritten as SQL
-aggregates and a `ROW_NUMBER` window it is **0.97 s and 29 MB**, and with every list read a
-page at a time, signing in is **151 KB**.
+- **Stock issues and receipts,** with row-level `SELECT … FOR UPDATE` locking so stock cannot
+  go negative when several people take the same item at once. Tested by racing 20 threads for
+  10 units against a real PostgreSQL: exactly 10 succeed, 10 are rejected.
+- **Replenishment planning** from the last 90 days of usage — days of cover, how much to order,
+  and suppliers ranked by price, lead time and rating. Cached in Redis.
+- **Purchase and price history,** with an alert when a supplier raises a price past a configured
+  threshold, shown next to what the other suppliers last charged for the same item.
+- **Reimbursements** with receipts uploaded straight to S3 on a presigned URL, so the files never
+  pass through the API. A Lambda checks each file's real signature against what the client
+  claimed before it can be attached, and the approved version is pinned so it cannot be swapped.
+- **An audit trail in two forms:** relational rows, plus a MongoDB document per event carrying
+  the fields that action actually has, so "every purchase that rose more than 20%" is a query
+  rather than a text search.
+- **A tool-using agent** that proposes reorders and cannot place one. Every tool but the final
+  proposal is read-only, and the quantities come from the same replenishment engine the console
+  uses, not from the model.
+- **A signed API Gateway webhook** suppliers push price quotes into, drained by a second Lambda.
 
-Paging the purchase history is where it got interesting, because it took an answer away from
-the console: the price alerts were derived by filtering every purchase the browser had been
-sent. In that dataset there are **10,817 alerts in the database against 19 visible in the fifty
-most recent purchases** — a page would have quietly redefined "price alerts" as "price alerts
-among recent purchases", on a figure the dashboard prints on a card. They are a server-side
-query now, and so are the alternative supplier prices quoted beside each one.
+Built to hold up at **10,000 items and 80,000 rows of history**: the replenishment engine
+aggregates in SQL instead of loading every row (3.3 s → 0.97 s), and every list is read a page
+at a time, which took signing in from **33 MB to 151 KB**.
 
-I also published the wrong number first. "33 MB to 107 KB" left out the ranked purchase plan,
-another 1.45 MB the console fetches on sign-in: I had measured the endpoints I changed rather
-than the whole path. Re-measuring all of it is what caught it, and the commit that fixes it
-says so.
+**334 backend tests at 95% statement coverage** and **34 browser tests**, with CI runs against
+real Redis, PostgreSQL and MongoDB instances rather than in-memory stand-ins. Infrastructure as
+Terraform, with Kubernetes manifests as an alternative deployment path.
 
-**334 backend tests at 95% statement coverage** and **34 driving the console in a real
-browser**, including passes in CI against real Redis, PostgreSQL and MongoDB instances rather
-than in-memory stand-ins, enforced by a coverage gate.
-
-**Live at [stockroom-warehouse-system.vercel.app](https://stockroom-warehouse-system.vercel.app)** —
-the console with the warehouse seeded into the browser, so there is nothing to wake up: sign in
-as `admin@stockroom.test` / `Stockroom!2026` and each of the three roles sees a different
-system. The API, Cognito and the Lambdas are exercised in CI and locally rather than deployed
-to AWS, and the repository says so rather than implying otherwise.
+**Live demo: [stockroom-warehouse-system.vercel.app](https://stockroom-warehouse-system.vercel.app)**
+— sign in as `admin@stockroom.test` / `Stockroom!2026`. The console runs with the warehouse
+seeded into the browser; the API, Cognito and the Lambdas run in CI and locally, not on AWS.
 
 ---
 
