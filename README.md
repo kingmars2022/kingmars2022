@@ -195,3 +195,33 @@ board grouped by status, and an inspector for the selected request.
 - **Search and filters** by status, title, system, priority and type, with live metrics on the intake panel.
 - **Delivery:** Docker Compose locally, GitHub Actions for backend tests and the frontend build, and
   Terraform for an AWS deployment (ALB, ECS Fargate, ECR, RDS) released through GitHub OIDC.
+
+
+### [EuroSAT Foundation Models](https://github.com/kingmars2022/eurosat-foundation-models) — label-efficient satellite image classification
+
+*How many labelled satellite images do you really need? A benchmark of five generations of computer-vision methods on EuroSAT land-cover classification (Sentinel-2, 10 classes), from 0 to 500 labels per class.*
+
+`Python` `PyTorch` `timm` `open_clip` `DINOv3` `CLIP / SigLIP 2 / RemoteCLIP` `Qwen3.5` `LoRA` `pytest` `GitHub Actions`
+
+A pipeline that caches each frozen encoder's features once, then runs linear probes, zero-shot
+prompting, in-context prompting and LoRA fine-tuning over the same fixed, stratified 2,000-image test
+set. **170 runs, all on free Tesla T4 GPUs** (Colab and Kaggle), every number logged per run and
+summarised by script.
+
+What it found:
+
+- **10 labels per class on a frozen encoder ≈ 500 per class from scratch.** A frozen DINOv3 ViT-L plus
+  a linear layer reaches 91.7% with 10 per class; a ResNet-18 trained from scratch needs 500 per class
+  for 92.0%.
+- **Satellite pre-training did not beat web pre-training here.** With identical architecture, the
+  ViT-L trained on 493M satellite tiles is below the web-trained one at every budget.
+- **LoRA beats the linear probe at every budget while training 0.8% of the weights,** reaching
+  98.5% at 500 per class, the best result in the project, and ahead of a linear probe trained on all
+  25,000 images.
+- **Chat VLMs do not replace a small labelled set.** The best zero-shot VLM (Qwen3.5-9B, 54.4%) is
+  below a 1-shot linear probe (63.4%) and about 36x slower per image; LoRA on Qwen3.5-2B lifts it to
+  88.0% at 50 per class, still under the vision encoders.
+
+Unit tests cover the split, k-shot sampling, augmentation and answer parsing, and a smoke test runs
+every pipeline stage end to end on CPU, offline, with tiny randomly initialised models. CI runs both
+on every push.
