@@ -125,5 +125,5 @@ seeded into the browser; the API, Cognito and the Lambdas run in CI and locally,
 
 ---
 
-*Most recently at **ThinTrix**, building Java/Spring Boot and Node.js services behind a React admin
+*Most recently at **Dianqing** **Company**, building Java/Spring Boot and Node.js services behind a React admin
 console for a condominium property-management platform, in a five-developer team.*
