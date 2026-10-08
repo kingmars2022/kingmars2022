@@ -12,6 +12,34 @@ Working languages: English · **French (B2 certified)** · Mandarin (native)
 
 ---
 
+## Experience
+
+**Software Development Intern** · Shanghai Cosmosstars Information Technology Co., Ltd.  
+*Sep 2025 – present · part-time, remote from Montreal*
+
+On a five-developer team building a condominium property-management platform: a React admin console over Java/Spring Boot and Node.js services.
+
+- Built React admin screens — paginated tables, multi-condition filters, sorting, and validated create/edit forms.
+- Built a hierarchical property-record view that takes users from buildings down to units and resident records.
+- Traced a pagination-count mismatch between the application and MySQL, then automated pre-release validation with a Python script.
+- Debugged across the React front end, Spring Boot services and Node.js services, closing 15+ development and debugging tickets in two-week Scrum sprints.
+
+## Tools I reach for
+
+**Languages** Java · Python · TypeScript · JavaScript · SQL  
+**Backend** Spring Boot · Spring Security · Spring Data JPA · JWT · FastAPI · Node.js · MyBatis · REST APIs  
+**Frontend** React · Next.js · Vue · Pinia · Vite  
+**Data & messaging** PostgreSQL · MySQL · MongoDB · Redis · Kafka · pgvector · Flyway · Alembic · schema design  
+**AI** RAG · Ollama · Amazon Bedrock · PyTorch · LoRA  
+**Cloud** AWS (Lambda · API Gateway · Cognito · S3 · SQS · ECS Fargate) · Docker · Kubernetes · Terraform  
+**Delivery** GitHub Actions · pytest · JUnit · MockMvc · Vitest · Playwright
+
+## Education
+
+**Concordia University** — Bachelor of Computer Science (BCompSc) · Montreal · 2023 – 2026
+
+---
+
 ## What I've built
 
 ### [Blainville Waste Sorting](https://github.com/kingmars2022/blainville-waste-sorting) — municipal waste sorting and collection app
@@ -112,18 +140,58 @@ Terraform, with Kubernetes manifests as an alternative deployment path.
 — sign in as `admin@stockroom.test` / `Stockroom!2026`. The console runs with the warehouse
 seeded into the browser; the API, Cognito and the Lambdas run in CI and locally, not on AWS.
 
----
 
-## Tools I reach for
+### [ClaimPilot](https://github.com/kingmars2022/claimpilot) — group insurance claims assistant
 
-**Languages** Java · Python · TypeScript · JavaScript · SQL  
-**Backend** Spring Boot · Spring Security · JWT · FastAPI · Node.js · MyBatis · REST APIs  
-**Frontend** React · Next.js · Vue · Pinia · Vite  
-**Data & messaging** PostgreSQL · MySQL · MongoDB · Redis · Kafka · Flyway · Alembic · schema design  
-**Cloud** AWS (Lambda · API Gateway · Cognito · S3) · Docker · Kubernetes · Terraform  
-**Delivery** GitHub Actions · pytest · JUnit · MockMvc · Vitest · Playwright
+*Upload your group benefits booklet, ask what it covers in English, French or Chinese, see what a claim needs, and get the claim form filled in from your own documents. You check every field, sign and submit it yourself.*
 
----
+`Java` `Spring Boot` `PostgreSQL + pgvector` `MongoDB` `Kafka` `Redis` `AWS S3/SQS` `Bedrock` `Ollama` `Tesseract OCR` `PDFBox` `React` `TypeScript` `Docker`
 
-*Most recently at **Dianqing** **Company**, building Java/Spring Boot and Node.js services behind a React admin
-console for a condominium property-management platform, in a five-developer team.*
+A Spring Boot API over PostgreSQL with pgvector, a processing worker that reads PDFs (with OCR),
+splits them into chunks and extracts key facts, and a React console with three modules: ask the
+policy, a claim guide, and a pre-filled claim form.
+
+What it does:
+
+- **Every answer cites the policy page,** and has one of three outcomes: answered, unclear, or not in
+  the policy. When the policy is silent, it prepares a call kit instead: the insurer's number, your
+  policy and certificate numbers, and a script for the call.
+- **The model reads, the code checks.** Each extracted fact comes with the exact quote it came from;
+  code finds that quote in the document, confirms the value sits inside it, and marks anything it
+  cannot confirm as unverified.
+- **Hard rules in code, not in the prompt.** Signature and consent fields always stay blank, an
+  "answered" reply that cites nothing is downgraded to "unclear", and an amount against a clause's
+  threshold is settled by comparing the numbers.
+- **Fills any insurer's fillable PDF** by matching field labels rather than field names; the mapping is
+  stored per form version (SHA-256) so later claims need no model call. Six built-in forms ship with a
+  reviewed mapping.
+- **Decides which plan pays first** in code, following the Canadian (CLHIA) coordination of benefits
+  guidelines, including custody per child for separated or divorced parents.
+- **Your data stays yours:** uploads encrypted at rest with AES-256-GCM, every search scoped to the
+  signed-in user, and *Delete my data* removes everything, cached model replies included.
+- **Scales by Spring profile, not by code change:** two containers on a laptop by default, or S3 plus
+  Kafka (or S3 notifications through SQS) to a separate worker, with Redis for shared cache and rate limits.
+
+On an evaluation set of **41 questions in three languages over four fictional documents**, run with a
+local 8B model on CPU, it gets the answer status right on 41/41, cites the expected page on 35/35, and
+extracts 18/18 key facts. Every miss from earlier runs was fixed in retrieval or in code, not with a
+larger model. Integration tests run over HTTP against real PostgreSQL/pgvector and MongoDB in Docker
+(Testcontainers).
+
+
+### [Enterprise Workflow Platform](https://github.com/kingmars2022/enterprise-workflow-platform) — approval workflow system
+
+*An internal tool for requests that need sign-off — IT access, purchases, invoice exceptions: submit, review, approve or reject, and see who moved each request and when.*
+
+`Java 17` `Spring Boot` `Spring Data JPA` `PostgreSQL` `React` `TypeScript` `Vite` `Docker Compose` `GitHub Actions` `Terraform` `AWS ECS Fargate`
+
+A Spring Boot REST API over PostgreSQL and a React console with three panels: request intake, a
+board grouped by status, and an inspector for the selected request.
+
+- **Transitions enforced on the server.** A request moves SUBMITTED → IN_REVIEW → APPROVED →
+  COMPLETED, or to REJECTED with a comment, and the rules live in the service layer, so the UI
+  cannot push a request into a state the workflow does not allow.
+- **An audit event for every creation and transition,** shown as a timeline on each request.
+- **Search and filters** by status, title, system, priority and type, with live metrics on the intake panel.
+- **Delivery:** Docker Compose locally, GitHub Actions for backend tests and the frontend build, and
+  Terraform for an AWS deployment (ALB, ECS Fargate, ECR, RDS) released through GitHub OIDC.
