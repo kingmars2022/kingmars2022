@@ -42,7 +42,7 @@ On a five-developer team building a condominium property-management platform: a 
 
 ## What I've built
 
-### [Blainville Waste Sorting](https://github.com/kingmars2022/blainville-waste-sorting) — municipal waste sorting and collection app
+### [tri-rive-nord](https://github.com/kingmars2022/tri-rive-nord) — municipal waste sorting and collection app
 
 *A website for residents of a Quebec town: which bin goes out tonight, where any household item belongs, and what the city has announced. In French, English and Chinese. Built with AI assistance (Claude Code).*
 
